@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      width: 300px;
+      margin: 0;
+      padding: 16px;
+      font: 14px/1.5 system-ui, sans-serif;
+    }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    #status { margin: 0 0 12px; color: #888; font-size: 13px; }
+    #status.connected { color: #2fa96b; font-weight: 600; }
+    .note { font-size: 12px; color: #888; margin: 0 0 12px; }
+    button {
+      width: 100%;
+      padding: 8px;
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid #8884;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+    button:hover { border-color: #7c6cff; }
+  </style>
+</head>
+<body>
+  <h1>🎮 Couch Controller</h1>
+  <p id="status">No controller detected.<br>Press any button on your controller.</p>
+  <p class="note">The controller works on the tab that has focus. It can't control Chrome's own pages (settings, new tab, Web Store).</p>
+  <button id="open-options">Buttons &amp; settings</button>
+  <script src="popup.js"></script>
+</body>
+</html>

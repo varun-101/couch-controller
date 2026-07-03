@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Couch Controller — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header>
+    <h1>🎮 Couch Controller</h1>
+    <p id="pad-status" class="status">No controller detected — press any button on your controller.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Button bindings</h2>
+      <p class="hint">Press a button on your controller to highlight its row. Pick an action from the
+        dropdown, or choose <em>Custom key press…</em> to make a button type a keyboard key on the page
+        (handy for site shortcuts like YouTube's <kbd>c</kbd> for captions).</p>
+      <div id="bindings"></div>
+    </section>
+
+    <section>
+      <h2>Analog sticks <span class="fixed-tag">fixed</span></h2>
+      <ul class="stick-info">
+        <li><strong>Left stick</strong> — scroll the page (vertical &amp; horizontal)</li>
+        <li><strong>Right stick</strong> — move the virtual cursor (slight tilt = precise, full tilt = fast)</li>
+        <li>Click with the button bound to <em>Click (virtual cursor)</em> — default <strong>R3</strong> (press the right stick)</li>
+        <li>On-screen keyboard — default <strong>L3</strong> toggles it. While open, the controller drives the
+          keyboard: sticks/D-pad move the selection, <strong>A</strong> presses, <strong>B</strong> backspace,
+          <strong>X</strong> space, <strong>Y</strong> shift, <strong>Start</strong> enter, <strong>Select</strong> closes</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Tuning</h2>
+      <div class="settings-grid">
+        <label>Scroll speed
+          <input type="range" id="scrollSpeed" min="8" max="60" step="1">
+          <span class="val" data-for="scrollSpeed"></span>
+        </label>
+        <label>Cursor speed
+          <input type="range" id="cursorSpeed" min="4" max="30" step="1">
+          <span class="val" data-for="cursorSpeed"></span>
+        </label>
+        <label>Seek step (seconds)
+          <input type="range" id="seekStep" min="2" max="60" step="1">
+          <span class="val" data-for="seekStep"></span>
+        </label>
+        <label>Volume step
+          <input type="range" id="volumeStep" min="0.01" max="0.2" step="0.01">
+          <span class="val" data-for="volumeStep"></span>
+        </label>
+        <label>Stick deadzone
+          <input type="range" id="deadzone" min="0.05" max="0.5" step="0.05">
+          <span class="val" data-for="deadzone"></span>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="hudEnabled"> Show on-screen feedback (HUD)
+        </label>
+      </div>
+    </section>
+
+    <footer>
+      <button id="reset" class="danger">Reset to defaults</button>
+      <span id="save-note" class="save-note">Changes save automatically.</span>
+    </footer>
+  </main>
+
+  <div id="key-capture" class="modal hidden">
+    <div class="modal-box">
+      <h3>Press a key…</h3>
+      <p>Press the keyboard key (with any modifiers) this controller button should type.</p>
+      <p class="capture-preview" id="capture-preview">&nbsp;</p>
+      <button id="capture-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
