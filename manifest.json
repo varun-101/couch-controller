@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Couch Controller",
   "version": "1.0.0",
-  "description": "Use your game controller like a TV remote: scroll pages, control video volume and seeking, switch tabs, toggle fullscreen, and set custom bindings.",
-  "permissions": ["storage", "tabs", "sessions"],
+  "description": "Use your game controller like a TV remote: scroll, control video playback, switch tabs, go fullscreen, set custom bindings.",
+  "permissions": ["storage", "sessions"],
   "background": {
     "service_worker": "background.js"
   },
