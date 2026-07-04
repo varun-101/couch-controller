@@ -1,0 +1,5 @@
+# Store upload bundles
+*.zip
+
+# Rendered promo video (re-render from promo/ sources; published on YouTube)
+promo/*.mp4
