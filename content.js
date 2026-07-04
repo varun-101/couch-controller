@@ -9,6 +9,10 @@
 
   // Per-button state for edge detection and hold-repeat.
   const buttonState = {}; // index -> { pressed, downAt, lastRepeat }
+  const comboState = {};  // "4+5" -> { pressed, downAt, lastRepeat }
+  const pendingSingles = {}; // index -> { dueAt }
+  const consumedButtons = new Set(); // eaten by a combo or a random chord; inert until released
+  const COMBO_GRACE_MS = 90; // ms a press waits before it counts as a single action
 
   chrome.storage.sync.get("config", (data) => {
     config = ccNormalizeConfig(data.config);
@@ -67,6 +71,71 @@
     const now = performance.now();
     const { repeatDelay, repeatInterval } = config.settings;
 
+    if (oskIsOpen()) return handleOskButtons(pad, now, repeatDelay, repeatInterval);
+
+    const pressedButtons = new Set();
+    const pressedEdges = [];
+    const releasedEdges = [];
+
+    for (let i = 0; i < pad.buttons.length; i++) {
+      const pressed = pad.buttons[i].pressed || pad.buttons[i].value > 0.5;
+      const state = buttonState[i] || (buttonState[i] = { pressed: false, downAt: 0, lastRepeat: 0 });
+
+      if (pressed) pressedButtons.add(i);
+      if (pressed && !state.pressed) {
+        state.pressed = true;
+        state.downAt = now;
+        state.lastRepeat = now;
+        pressedEdges.push(i);
+      } else if (!pressed && state.pressed) {
+        state.pressed = false;
+        releasedEdges.push(i);
+      }
+    }
+
+    const comboButtons = processCombos(pressedButtons, now, repeatDelay, repeatInterval);
+
+    for (const i of releasedEdges) {
+      delete pendingSingles[i];
+      consumedButtons.delete(i);
+    }
+
+    // Multiple held buttons that don't form a configured combo cancel each
+    // other — random mashing must not fire a pile of single actions.
+    const loosePressed = [...pressedButtons].filter((i) => !comboButtons.has(i));
+    if (loosePressed.length >= 2) {
+      for (const i of loosePressed) {
+        consumedButtons.add(i);
+        delete pendingSingles[i];
+      }
+    }
+
+    for (const i of pressedEdges) {
+      if (comboButtons.has(i) || consumedButtons.has(i)) continue;
+      pendingSingles[i] = { dueAt: now + COMBO_GRACE_MS };
+    }
+
+    for (const i of pressedButtons) {
+      if (comboButtons.has(i)) {
+        delete pendingSingles[i];
+        continue;
+      }
+      if (consumedButtons.has(i)) continue;
+      const pending = pendingSingles[i];
+      const state = buttonState[i];
+      if (pending && now >= pending.dueAt) {
+        delete pendingSingles[i];
+        state.lastRepeat = now;
+        runBinding(i);
+      } else if (!pending && buttonRepeats(i) &&
+          now - state.downAt > repeatDelay && now - state.lastRepeat > repeatInterval) {
+        state.lastRepeat = now;
+        runBinding(i);
+      }
+    }
+  }
+
+  function handleOskButtons(pad, now, repeatDelay, repeatInterval) {
     for (let i = 0; i < pad.buttons.length; i++) {
       const pressed = pad.buttons[i].pressed || pad.buttons[i].value > 0.5;
       const state = buttonState[i] || (buttonState[i] = { pressed: false, downAt: 0, lastRepeat: 0 });
@@ -88,6 +157,47 @@
     }
   }
 
+  function processCombos(pressedButtons, now, repeatDelay, repeatInterval) {
+    const activeButtons = new Set();
+    const combos = (config.combos || []).slice()
+      .filter((combo) => combo.buttons && combo.buttons.length >= 2 && combo.binding)
+      .sort((a, b) => b.buttons.length - a.buttons.length);
+
+    for (const combo of combos) {
+      const key = comboKey(combo.buttons);
+      const state = comboState[key] || (comboState[key] = { pressed: false, downAt: 0, lastRepeat: 0 });
+      const active = combo.buttons.every((button) => pressedButtons.has(button));
+      const overlapsActiveCombo = combo.buttons.some((button) => activeButtons.has(button));
+
+      if (!active || overlapsActiveCombo) {
+        state.pressed = false;
+        continue;
+      }
+
+      for (const button of combo.buttons) {
+        activeButtons.add(button);
+        consumedButtons.add(button);
+        delete pendingSingles[button];
+      }
+
+      if (!state.pressed) {
+        state.pressed = true;
+        state.downAt = now;
+        state.lastRepeat = now;
+        executeBinding(combo.binding);
+      } else if (bindingRepeats(combo.binding) &&
+          now - state.downAt > repeatDelay && now - state.lastRepeat > repeatInterval) {
+        state.lastRepeat = now;
+        executeBinding(combo.binding);
+      }
+    }
+    return activeButtons;
+  }
+
+  function comboKey(buttons) {
+    return buttons.join("+");
+  }
+
   // While the on-screen keyboard is open, the controller drives it and
   // nothing else — sticks/D-pad move the key selection, face buttons type.
   function pressButton(i) {
@@ -97,7 +207,10 @@
 
   function buttonRepeats(i) {
     if (oskIsOpen()) return OSK_REPEAT_BUTTONS.has(i);
-    const binding = config.bindings[i];
+    return bindingRepeats(config.bindings[i]);
+  }
+
+  function bindingRepeats(binding) {
     const actionId = typeof binding === "string" ? binding : binding && binding.action;
     return !!(actionId && CC_ACTIONS[actionId] && CC_ACTIONS[actionId].repeat);
   }
@@ -130,12 +243,20 @@
   // ---------------------------------------------------------------- actions
 
   function runBinding(buttonIndex) {
-    const binding = config.bindings[buttonIndex];
+    executeBinding(config.bindings[buttonIndex]);
+  }
+
+  function executeBinding(binding) {
     if (!binding || binding === "none") return;
 
     if (typeof binding === "object" && binding.action === "customKey") {
       dispatchKey(binding);
       showHud("⌨️", `Key: ${binding.key}`);
+      return;
+    }
+    if (typeof binding === "object" && binding.action === "openUrl") {
+      chrome.runtime.sendMessage({ type: "cc-command", command: "openUrl", url: binding.url });
+      showHud("🌐", `Open ${urlHost(binding.url)}`);
       return;
     }
     runAction(binding);
@@ -794,6 +915,11 @@
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
     return (h ? `${h}:${String(m).padStart(2, "0")}` : `${m}`) + `:${String(s).padStart(2, "0")}`;
+  }
+
+  function urlHost(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); }
+    catch { return "site"; }
   }
 
   function shortName(id) {

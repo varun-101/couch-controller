@@ -47,16 +47,18 @@ const CC_ACTIONS = {
   newTab:         { label: "New tab" },
   closeTab:       { label: "Close tab" },
   reopenTab:      { label: "Reopen closed tab" },
+  openUrl:        { label: "Open specific tab…" },
   customKey:      { label: "Custom key press…" }
 };
 
 // Actions that must run in the background service worker (browser-level).
 const CC_BACKGROUND_ACTIONS = new Set([
-  "nextTab", "prevTab", "newTab", "closeTab", "reopenTab", "windowFullscreen"
+  "nextTab", "prevTab", "newTab", "closeTab", "reopenTab", "openUrl", "windowFullscreen"
 ]);
 
-// Binding values are either an action id string, or for custom keys:
+// Binding values are either an action id string, or an action object:
 // { action: "customKey", key: "k", code: "KeyK" }
+// { action: "openUrl", url: "https://www.netflix.com" }
 const CC_DEFAULT_CONFIG = {
   bindings: {
     0: "playPause",
@@ -77,6 +79,7 @@ const CC_DEFAULT_CONFIG = {
     15: "seekForward",
     16: "none"
   },
+  combos: [],
   settings: {
     scrollSpeed: 28,     // max px per frame from analog stick
     cursorSpeed: 14,     // max px per frame for the virtual cursor
@@ -92,13 +95,23 @@ const CC_DEFAULT_CONFIG = {
 function ccNormalizeConfig(raw) {
   const cfg = {
     bindings: { ...CC_DEFAULT_CONFIG.bindings },
+    combos: [],
     settings: { ...CC_DEFAULT_CONFIG.settings }
   };
   if (raw && typeof raw === "object") {
     if (raw.bindings) {
       for (const [btn, val] of Object.entries(raw.bindings)) {
-        if (typeof val === "string" && CC_ACTIONS[val]) cfg.bindings[btn] = val;
-        else if (val && typeof val === "object" && val.action === "customKey" && val.key) cfg.bindings[btn] = val;
+        const binding = ccNormalizeBinding(val);
+        if (binding) cfg.bindings[btn] = binding;
+      }
+    }
+    if (Array.isArray(raw.combos)) {
+      for (const combo of raw.combos) {
+        const buttons = ccNormalizeComboButtons(combo && combo.buttons);
+        const binding = ccNormalizeBinding(combo && combo.binding);
+        if (buttons.length >= 2 && binding && binding !== "none") {
+          cfg.combos.push({ buttons, binding });
+        }
       }
     }
     if (raw.settings) {
@@ -108,4 +121,44 @@ function ccNormalizeConfig(raw) {
     }
   }
   return cfg;
+}
+
+function ccNormalizeBinding(val) {
+  if (typeof val === "string" && CC_ACTIONS[val] && val !== "openUrl") return val;
+  if (!val || typeof val !== "object") return null;
+  if (val.action === "customKey" && val.key) {
+    return {
+      action: "customKey",
+      key: String(val.key),
+      code: val.code ? String(val.code) : "",
+      ctrl: !!val.ctrl,
+      alt: !!val.alt,
+      shift: !!val.shift,
+      meta: !!val.meta
+    };
+  }
+  if (val.action === "openUrl" && val.url) {
+    const url = ccNormalizeUrl(val.url);
+    return url ? { action: "openUrl", url } : null;
+  }
+  return null;
+}
+
+function ccNormalizeComboButtons(buttons) {
+  if (!Array.isArray(buttons)) return [];
+  return [...new Set(buttons.map((n) => Number(n)).filter((n) => Number.isInteger(n) && CC_BUTTON_NAMES[n]))]
+    .sort((a, b) => a - b);
+}
+
+function ccNormalizeUrl(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.href;
+  } catch {
+    return "";
+  }
 }

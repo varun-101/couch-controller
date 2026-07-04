@@ -72,6 +72,10 @@ Options). There you can:
 - **Custom key press** — bind a button to type any keyboard key (with
   modifiers) into the page. Great for site shortcuts, e.g. YouTube's `c`
   for captions or `>` for speed.
+- **Combo bindings** — bind two or more controller buttons together, such as
+  **LB (L1)** + **RB (R1)** for **New tab**.
+- **Open specific tab** — bind a button or combo to open a URL, such as
+  `netflix.com`, in a new tab.
 - **Tune behavior** — scroll speed, seek step, volume step, stick deadzone,
   and the on-screen HUD toggle.
 

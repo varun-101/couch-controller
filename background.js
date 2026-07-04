@@ -19,6 +19,11 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     case "reopenTab":
       chrome.sessions.restore().catch(() => {});
       break;
+    case "openUrl": {
+      const url = safeTabUrl(msg.url);
+      if (url) chrome.tabs.create({ url });
+      break;
+    }
     case "windowFullscreen":
       toggleWindowFullscreen(sender.tab);
       break;
@@ -41,4 +46,17 @@ async function toggleWindowFullscreen(fromTab) {
   chrome.windows.update(win.id, {
     state: win.state === "fullscreen" ? "normal" : "fullscreen"
   });
+}
+
+function safeTabUrl(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.href;
+  } catch {
+    return "";
+  }
 }
