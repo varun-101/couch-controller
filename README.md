@@ -10,11 +10,18 @@ Switch Pro, most generic USB/Bluetooth pads).
 
 ## Install
 
+**[Get it from the Chrome Web Store](https://chromewebstore.google.com/detail/odlaphcdndfenefjhmoneehgjbcpkhof)** — one click, free.
+
+Then connect your controller and press any button on a normal web page —
+a "Controller connected" toast confirms it's working.
+
+<details>
+<summary>Install from source (for development)</summary>
+
 1. Open `chrome://extensions` in Chrome (or Edge/Brave).
 2. Enable **Developer mode** (toggle in the top-right corner).
 3. Click **Load unpacked** and select this folder.
-4. Connect your controller and press any button on a normal web page —
-   a "Controller connected" toast confirms it's working.
+</details>
 
 ## Default controls (Xbox naming, PS equivalents apply)
 

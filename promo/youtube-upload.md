@@ -33,12 +33,14 @@ all without touching the mouse.
 • Open a favorite site (like netflix.com) with a single button
 • Settings sync with your Chrome profile
 
-📦 Get it (free & open source)
-https://github.com/varun-101/couch-controller
+📦 Install from the Chrome Web Store (free)
+https://chromewebstore.google.com/detail/odlaphcdndfenefjhmoneehgjbcpkhof
 
-Install: open chrome://extensions → enable Developer mode → Load unpacked →
-select the extension folder. Press any button on your controller on a normal
+One click to install — then press any button on your controller on a normal
 web page and you're in.
+
+💻 Source code (open source)
+https://github.com/varun-101/couch-controller
 
 #chrome #chromeextension #gamepad #controller #xbox #playstation #productivity
 
@@ -62,6 +64,7 @@ source, developer tools, browser extension demo
   not a Short. If you ever want a Short, a 9:16 vertical cut would be needed.
 
 ## Pinned comment (optional)
-Grab it here (free & open source): https://github.com/varun-101/couch-controller
+Install it here (free): https://chromewebstore.google.com/detail/odlaphcdndfenefjhmoneehgjbcpkhof
+Open source: https://github.com/varun-101/couch-controller
 Works with Xbox, PlayStation, Switch Pro and most USB/Bluetooth pads. What
 should the default bindings be? Open an issue!
